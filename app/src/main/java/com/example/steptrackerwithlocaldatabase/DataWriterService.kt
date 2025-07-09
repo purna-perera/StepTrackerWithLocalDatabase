@@ -10,6 +10,7 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import com.example.steptrackerwithlocaldatabase.ui.theme.StepDataManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -48,8 +49,9 @@ class DataWriterService : Service() {
         if (job?.isActive != true) {
             job = serviceScope.launch {
                 while (isActive) {
+                    HistoryManager.appendToHistory(this@DataWriterService)
                     Log.d("DataWriterService", "Saved step data")
-                    delay(60000)
+                    delay(15000)
                 }
             }
         }
