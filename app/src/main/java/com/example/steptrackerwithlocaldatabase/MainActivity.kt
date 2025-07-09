@@ -30,6 +30,5 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-        DataWriterController.startDataWriter(this)
     }
 }

@@ -10,11 +10,9 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import androidx.core.app.ServiceCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -68,11 +66,16 @@ class DataWriterService : Service() {
 
 object DataWriterController {
     fun startDataWriter(context: Context) {
-        val dataWriterIntent = Intent(context, DataWriterService::class.java)
+        val intent = Intent(context, DataWriterService::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            context.startForegroundService(dataWriterIntent)
+            context.startForegroundService(intent)
         } else {
-            context.startService(dataWriterIntent)
+            context.startService(intent)
         }
+    }
+
+    fun stopDataWriter(context: Context) {
+        val intent = Intent(context, DataWriterService::class.java)
+        context.stopService(intent)
     }
 }
