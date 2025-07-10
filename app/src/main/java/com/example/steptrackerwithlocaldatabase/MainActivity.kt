@@ -18,6 +18,7 @@ import com.example.steptrackerwithlocaldatabase.ui.theme.StepTrackerWithLocalDat
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         Log.d("MainActivity", "onCreate")
+        StepDataManager.init(this)
         super.onCreate(savedInstanceState)
         setContent {
             StepTrackerWithLocalDatabaseTheme {

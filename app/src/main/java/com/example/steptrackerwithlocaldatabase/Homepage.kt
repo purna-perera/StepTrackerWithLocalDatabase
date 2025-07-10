@@ -27,7 +27,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.steptrackerwithlocaldatabase.ui.theme.StepDataManager
 import kotlinx.coroutines.launch
 
 @Composable
@@ -54,13 +53,13 @@ fun HomepageView() {
             Text(myViewModel.getTotalStepsString(), style = MaterialTheme.typography.displayMedium)
             Spacer(Modifier.height(16.dp))
             Button({
-                myViewModel.onResetButtonClick()
+                StepDataManager.resetSteps(context)
             }) {
                 Text("Reset", style = MaterialTheme.typography.bodyLarge)
             }
         }
         Button({
-            myViewModel.onMockStepButtonClick()
+            StepDataManager.incrementMockSteps(context)
         }, Modifier.align(Alignment.BottomStart)) {
             Text("Mock step", style = MaterialTheme.typography.labelSmall)
         }
@@ -96,10 +95,6 @@ class HomepageViewModel() : ViewModel() {
     }
 
     fun getTotalStepsString(): String = steps.toString()
-
-    fun onMockStepButtonClick() = StepDataManager.incrementSteps()
-
-    fun onResetButtonClick() = StepDataManager.resetSteps()
 
     fun getHistoryString(): String = history
 

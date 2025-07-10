@@ -2,7 +2,6 @@ package com.example.steptrackerwithlocaldatabase
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.example.steptrackerwithlocaldatabase.ui.theme.StepDataManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.json.JSONArray
 import org.json.JSONObject
@@ -14,7 +13,7 @@ import java.util.TimeZone
 object HistoryManager {
     val historyFlow = MutableStateFlow("[]")
     fun appendToHistory(context: Context) {
-        val prefs = getHistoryPrefs(context)
+        val prefs = getPrefs(context)
         val json = prefs.getString("history", "[]") ?: "[]"
         val jsonArray = JSONArray(json)
         val dateString = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).run {
@@ -34,11 +33,8 @@ object HistoryManager {
     }
 
     fun clearHistory(context: Context) {
-        getHistoryPrefs(context).edit().putString("history", "[]").apply()
+        getPrefs(context).edit().putString("history", "[]").apply()
+        historyFlow.value = "[]"
     }
-
-    private fun getHistoryPrefs(context: Context): SharedPreferences =
-        context.getSharedPreferences("my_prefs", Context.MODE_PRIVATE)
-
 }
 
