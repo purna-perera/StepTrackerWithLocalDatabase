@@ -33,11 +33,11 @@ import kotlinx.coroutines.launch
 fun HomepageView() {
     val myViewModel = viewModel<HomepageViewModel>()
     val context = LocalContext.current
-    LaunchedEffect(myViewModel.getDataWriterSwitchChecked()) {
-        if (myViewModel.getDataWriterSwitchChecked()) {
-            DataWriterController.startDataWriter(context)
+    LaunchedEffect(myViewModel.getStepCounterSwitchChecked()) {
+        if (myViewModel.getStepCounterSwitchChecked()) {
+            StepCounterServiceController.startStepCounter(context)
         } else {
-            DataWriterController.stopDataWriter(context)
+            StepCounterServiceController.stopStepCounter(context)
         }
     }
     Box(
@@ -64,11 +64,11 @@ fun HomepageView() {
             Text("Mock step", style = MaterialTheme.typography.labelSmall)
         }
         Row(Modifier.align(Alignment.BottomEnd)) {
-            Text("Record history", Modifier.align(Alignment.CenterVertically),
+            Text("Count steps", Modifier.align(Alignment.CenterVertically),
                 style = MaterialTheme.typography.labelSmall)
             Spacer(Modifier.width(4.dp))
-            Switch(myViewModel.getDataWriterSwitchChecked(), {
-                myViewModel.onDataWriterSwitchClicked(it)
+            Switch(myViewModel.getStepCounterSwitchChecked(), {
+                myViewModel.onStepCounterSwitchClicked(it)
             })
         }
         Text(myViewModel.getHistoryString(),
@@ -78,7 +78,7 @@ fun HomepageView() {
 
 class HomepageViewModel() : ViewModel() {
     private var steps by mutableStateOf(0)
-    private var dataWriterActive by mutableStateOf(true)
+    private var stepCounterActive by mutableStateOf(false)
     private var history by mutableStateOf("[]")
 
     init {
@@ -98,9 +98,14 @@ class HomepageViewModel() : ViewModel() {
 
     fun getHistoryString(): String = history
 
-    fun onDataWriterSwitchClicked(checked: Boolean) {
-        dataWriterActive = checked
+    fun onStepCounterSwitchClicked(checked: Boolean) {
+        if (PermissionManager.permissionAvailable()) {
+            stepCounterActive = checked
+        } else {
+            stepCounterActive = false
+            TODO("Add Toast")
+        }
     }
 
-    fun getDataWriterSwitchChecked() = dataWriterActive
+    fun getStepCounterSwitchChecked() = stepCounterActive
 }

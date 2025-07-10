@@ -18,7 +18,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-class DataWriterService : Service() {
+class StepCounterService : Service() {
     private val serviceScope = CoroutineScope(Dispatchers.IO)
     private var job: Job? = null
 
@@ -34,22 +34,22 @@ class DataWriterService : Service() {
         )
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
-                "data_writer_service_channel",
-                "Data Writer Service",
+                "step_counter_service_channel",
+                "Step Counter Service",
                 NotificationManager.IMPORTANCE_LOW
             )
             val manager = getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(channel)
         }
         val notification = NotificationCompat
-            .Builder(this, "data_writer_service_channel")
+            .Builder(this, "step_counter_service_channel")
             .setContentIntent(pendingIntent).setSmallIcon(R.mipmap.ic_launcher).build()
         startForeground(1, notification)
         if (job?.isActive != true) {
             job = serviceScope.launch {
                 while (isActive) {
-                    HistoryManager.appendToHistory(this@DataWriterService)
-                    Log.d("DataWriterService", "Saved step data")
+                    HistoryManager.appendToHistory(this@StepCounterService)
+                    Log.d("StepCounterService", "Saved step data")
                     delay(15000)
                 }
             }
@@ -65,9 +65,9 @@ class DataWriterService : Service() {
     }
 }
 
-object DataWriterController {
-    fun startDataWriter(context: Context) {
-        val intent = Intent(context, DataWriterService::class.java)
+object StepCounterServiceController {
+    fun startStepCounter(context: Context) {
+        val intent = Intent(context, StepCounterService::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             context.startForegroundService(intent)
         } else {
@@ -75,8 +75,8 @@ object DataWriterController {
         }
     }
 
-    fun stopDataWriter(context: Context) {
-        val intent = Intent(context, DataWriterService::class.java)
+    fun stopStepCounter(context: Context) {
+        val intent = Intent(context, StepCounterService::class.java)
         context.stopService(intent)
     }
 }

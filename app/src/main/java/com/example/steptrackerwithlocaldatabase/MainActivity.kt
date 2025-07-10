@@ -32,4 +32,9 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onResume() {
+        TODO("check permission")
+        super.onResume()
+    }
 }

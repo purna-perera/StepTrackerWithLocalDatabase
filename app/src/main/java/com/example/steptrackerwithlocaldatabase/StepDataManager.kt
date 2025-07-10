@@ -18,6 +18,10 @@ object StepDataManager {
         stepFlow.value = 0
     }
 
+    fun getStepsFromDisk(context: Context): Int {
+        return getPrefs(context).getInt("mocked_steps", 0)
+    }
+
     fun init(context: Context) {
         stepFlow.value = getPrefs(context).getInt("mocked_steps", 0)
     }

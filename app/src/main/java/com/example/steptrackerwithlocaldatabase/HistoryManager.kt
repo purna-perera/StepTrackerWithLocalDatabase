@@ -1,7 +1,6 @@
 package com.example.steptrackerwithlocaldatabase
 
 import android.content.Context
-import android.content.SharedPreferences
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.json.JSONArray
 import org.json.JSONObject
@@ -21,7 +20,7 @@ object HistoryManager {
             format(Date())
         }
         val obj = JSONObject().apply {
-            put("step_count", StepDataManager.stepFlow.value)
+            put("step_count", StepDataManager.getStepsFromDisk(context))
             put("timestamp", dateString ?: "_")
         }
         jsonArray.put(obj)
