@@ -13,12 +13,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import com.example.steptrackerwithlocaldatabase.ui.theme.HistoryTab
 import com.example.steptrackerwithlocaldatabase.ui.theme.StepTrackerWithLocalDatabaseTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         Log.d("MainActivity", "onCreate")
         StepDataManager.init(this)
+        HistoryManager.init(this)
         super.onCreate(savedInstanceState)
         setContent {
             StepTrackerWithLocalDatabaseTheme {
@@ -27,14 +29,9 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    HomepageView()
+                    HistoryTab()
                 }
             }
         }
-    }
-
-    override fun onResume() {
-        TODO("check permission")
-        super.onResume()
     }
 }

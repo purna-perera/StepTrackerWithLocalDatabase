@@ -1,6 +1,7 @@
 package com.example.steptrackerwithlocaldatabase
 
 import android.content.Context
+import androidx.core.content.edit
 import kotlinx.coroutines.flow.MutableStateFlow
 
 object StepDataManager {
@@ -10,19 +11,30 @@ object StepDataManager {
         val prefs = getPrefs(context)
         val mockedSteps = prefs.getInt("mocked_steps", 0)
         prefs.edit().putInt("mocked_steps", mockedSteps + 1).apply()
-        stepFlow.value = mockedSteps + 1
+        stepFlow.value = mockedSteps + 1 + prefs.getInt("actual_steps", 0)
+    }
+
+    fun incrementActualSteps(context: Context, increment: Int) {
+        val prefs = getPrefs(context)
+        val actualSteps = prefs.getInt("actual_steps", 0)
+        prefs.edit().putInt("actual_steps", actualSteps + increment).apply()
+        stepFlow.value = actualSteps + increment + prefs.getInt("mocked_steps", 0)
     }
 
     fun resetSteps(context: Context) {
-        getPrefs(context).edit().putInt("mocked_steps", 0).apply()
+        val prefs = getPrefs(context)
+        prefs.edit().putInt("mocked_steps", 0).putInt("actual_steps", 0).apply()
+
         stepFlow.value = 0
     }
 
     fun getStepsFromDisk(context: Context): Int {
-        return getPrefs(context).getInt("mocked_steps", 0)
+        val prefs = getPrefs(context)
+        return prefs.getInt("mocked_steps", 0) +
+                prefs.getInt("actual_steps", 0)
     }
 
     fun init(context: Context) {
-        stepFlow.value = getPrefs(context).getInt("mocked_steps", 0)
+        stepFlow.value = getStepsFromDisk(context)
     }
 }

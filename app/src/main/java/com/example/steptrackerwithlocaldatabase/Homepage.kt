@@ -1,5 +1,7 @@
 package com.example.steptrackerwithlocaldatabase
 
+import android.app.Activity
+import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,6 +15,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PermanentDrawerSheet
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -68,18 +71,22 @@ fun HomepageView() {
                 style = MaterialTheme.typography.labelSmall)
             Spacer(Modifier.width(4.dp))
             Switch(myViewModel.getStepCounterSwitchChecked(), {
-                myViewModel.onStepCounterSwitchClicked(it)
+                if (!myViewModel.tryToggleService(it, PermissionManager.permissionAvailable(context))) {
+                    Toast.makeText(
+                        context,
+                        "Permission unavailable, try again after granting permission",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    PermissionManager.requestUserPermission(context as? Activity)
+                }
             })
         }
-        Text(myViewModel.getHistoryString(),
-            Modifier.heightIn(max = 250.dp).verticalScroll(rememberScrollState()))
     }
 }
 
 class HomepageViewModel() : ViewModel() {
     private var steps by mutableStateOf(0)
     private var stepCounterActive by mutableStateOf(false)
-    private var history by mutableStateOf("[]")
 
     init {
         viewModelScope.launch {
@@ -87,23 +94,18 @@ class HomepageViewModel() : ViewModel() {
                 steps = newSteps
             }
         }
-        viewModelScope.launch {
-            HistoryManager.historyFlow.collect { newHistory ->
-                history = newHistory
-            }
-        }
     }
 
     fun getTotalStepsString(): String = steps.toString()
 
-    fun getHistoryString(): String = history
-
-    fun onStepCounterSwitchClicked(checked: Boolean) {
-        if (PermissionManager.permissionAvailable()) {
+    /** Will return false if activity recognition permission is unavailable else true */
+    fun tryToggleService(checked: Boolean, permissionAvailable: Boolean): Boolean {
+        return if (permissionAvailable) {
             stepCounterActive = checked
+            true
         } else {
             stepCounterActive = false
-            TODO("Add Toast")
+            false
         }
     }
 

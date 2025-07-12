@@ -1,7 +1,16 @@
 package com.example.steptrackerwithlocaldatabase
 
 import android.content.Context
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.decodeFromJsonElement
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.SimpleDateFormat
@@ -10,11 +19,12 @@ import java.util.Locale
 import java.util.TimeZone
 
 object HistoryManager {
-    val historyFlow = MutableStateFlow("[]")
+    val historyListFlow = MutableStateFlow(JSONArray())
+    private val jsonConfig = Json { ignoreUnknownKeys }
+
     fun appendToHistory(context: Context) {
         val prefs = getPrefs(context)
-        val json = prefs.getString("history", "[]") ?: "[]"
-        val jsonArray = JSONArray(json)
+        val jsonArray = JSONArray(prefs.getString("history", "[]") ?: "[]")
         val dateString = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).run {
             timeZone = TimeZone.getTimeZone("UTC")
             format(Date())
@@ -28,12 +38,33 @@ object HistoryManager {
         prefs.edit()
             .putString("history", jsonString)
             .apply()
-        historyFlow.value = jsonString
+        CoroutineScope(Dispatchers.Main).launch {
+            historyListFlow.value = getHistoryListFromDisk(context)
+        }
     }
 
     fun clearHistory(context: Context) {
         getPrefs(context).edit().putString("history", "[]").apply()
-        historyFlow.value = "[]"
+        historyListFlow.value = JSONArray()
     }
+
+    private fun getHistoryListFromDisk(context: Context): JSONArray {
+        return JSONArray(getPrefs(context).getString("history", "[]") ?: "[]")
+    }
+
+    fun getHistoryItem(index: Int): HistoryItem {
+        return jsonConfig.decodeFromString(historyListFlow.value.getJSONObject(index).toString())
+
+    }
+
+    fun init(context: Context) {
+        historyListFlow.value = getHistoryListFromDisk(context)
+    }
+
+    @Serializable
+    data class HistoryItem(
+        @SerialName("step_count") val stepCount: Int,
+        @SerialName("timestamp") val timestamp: String
+    )
 }
 

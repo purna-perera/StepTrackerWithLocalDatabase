@@ -6,6 +6,10 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
@@ -18,9 +22,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-class StepCounterService : Service() {
+class StepCounterService : Service(), SensorEventListener {
     private val serviceScope = CoroutineScope(Dispatchers.IO)
     private var job: Job? = null
+    private var sensorListenerRegistered = false
+    private var stepOffset = -1L
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -54,6 +60,12 @@ class StepCounterService : Service() {
                 }
             }
         }
+        if (!sensorListenerRegistered) {
+            val sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+            sensorListenerRegistered = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)?.let {
+                sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
+            } == true
+        }
         return START_STICKY
     }
 
@@ -62,7 +74,25 @@ class StepCounterService : Service() {
         serviceScope.cancel()
         job?.cancel()
         job = null
+        (getSystemService(Context.SENSOR_SERVICE) as SensorManager).unregisterListener(this)
+        sensorListenerRegistered = false
+        stepOffset = -1L
     }
+
+    override fun onSensorChanged(event: SensorEvent?) {
+        if (event?.sensor?.type == Sensor.TYPE_STEP_COUNTER) {
+            val steps = event.values[0].toLong()
+            if (stepOffset != -1L) {
+                StepDataManager.incrementActualSteps(
+                    this,
+                    (steps - stepOffset).toInt()
+                )
+            }
+            stepOffset = steps
+        }
+    }
+
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
 }
 
 object StepCounterServiceController {
