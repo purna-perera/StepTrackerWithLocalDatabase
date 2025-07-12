@@ -53,7 +53,10 @@ object HistoryManager {
     }
 
     fun getHistoryItem(index: Int): HistoryItem {
-        return jsonConfig.decodeFromString(historyListFlow.value.getJSONObject(index).toString())
+        val list = historyListFlow.value
+        return jsonConfig.decodeFromString(
+            list.getJSONObject(list.length() - 1 - index).toString()
+        )
 
     }
 

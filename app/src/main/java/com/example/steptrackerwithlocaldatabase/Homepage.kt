@@ -33,7 +33,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 
 @Composable
-fun HomepageView() {
+fun HomepageView(historyTabCallback: () -> Unit) {
     val myViewModel = viewModel<HomepageViewModel>()
     val context = LocalContext.current
     LaunchedEffect(myViewModel.getStepCounterSwitchChecked()) {
@@ -80,6 +80,9 @@ fun HomepageView() {
                     PermissionManager.requestUserPermission(context as? Activity)
                 }
             })
+        }
+        Button(historyTabCallback, Modifier.align(Alignment.TopStart)) {
+            Text("Show history", style = MaterialTheme.typography.labelSmall)
         }
     }
 }
