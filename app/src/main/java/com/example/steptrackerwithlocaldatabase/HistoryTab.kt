@@ -39,6 +39,7 @@ private const val VERTICAL_SPACE = 8
 private const val FIRST_COLUMN_WIDTH = 80
 private const val DIVIDER_WIDTH = 1
 
+/** Side tab which displays and manages the users step history **/
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistoryTab() {

@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
+/** Foreground service to continue counting steps an updating the user history even when the app is killed **/
 class StepCounterService : Service(), SensorEventListener {
     private val serviceScope = CoroutineScope(Dispatchers.IO)
     private var job: Job? = null
@@ -38,13 +39,14 @@ class StepCounterService : Service(), SensorEventListener {
         private const val CHANNEL_NAME = "Step Counter Service"
         private const val PENDING_INTENT_REQUEST_CODE = 0
         private const val NOTIFICATION_ID = 1
-        private const val HISTORY_REPORT_INTERVAL_MILLIS = 15000L
+        private const val HISTORY_REPORT_INTERVAL_MILLIS = 60000L
         private const val STEP_OFFSET_MISSING = -1L
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        Log.d(TAG, "onStartCommand")
         StepCounterServiceManager.serviceStarted = true
         startForeground(NOTIFICATION_ID, createNotification())
         tryStartHistoryWritingJob()
@@ -75,6 +77,7 @@ class StepCounterService : Service(), SensorEventListener {
 
     private fun tryStartHistoryWritingJob() {
         if (job?.isActive != true) {
+            Log.d(TAG, "New history writing coroutine started")
             job = serviceScope.launch {
                 while (isActive) {
                     HistoryManager.appendToHistory(this@StepCounterService)
@@ -91,11 +94,13 @@ class StepCounterService : Service(), SensorEventListener {
             sensorListenerRegistered = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)?.let {
                 sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
             } == true
+            Log.d(TAG, "Try to register sensor listener, success = $sensorListenerRegistered")
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        Log.d(TAG, "onDestroy")
         serviceScope.cancel()
         job?.cancel()
         job = null
@@ -125,15 +130,23 @@ class StepCounterService : Service(), SensorEventListener {
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
 }
 
+/** Object to interact with the app's foreground service **/
 object StepCounterServiceManager {
+    private const val TAG = "StepCounterServiceManager"
+
+    /** Variable used to tell the user if we are still awaiting the first listener callback,
+     * we can't start recording steps until we ge tthe first callback and know the offset to use **/
     val currentlyCalibratingFlow = MutableStateFlow(false)
+
     var serviceStarted = false
 
     @MainThread
     fun startStepCounter(context: Context) {
         if (serviceStarted) {
+            Log.d(TAG, "startStepCounter blocked because service already active")
             return
         }
+        Log.d(TAG, "startStepCounter intent sent")
         val intent = Intent(context, StepCounterService::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             context.startForegroundService(intent)
@@ -145,6 +158,7 @@ object StepCounterServiceManager {
 
     @MainThread
     fun stopStepCounter(context: Context) {
+        Log.d(TAG, "stopStepCounter")
         val intent = Intent(context, StepCounterService::class.java)
         context.stopService(intent)
         currentlyCalibratingFlow.value = false

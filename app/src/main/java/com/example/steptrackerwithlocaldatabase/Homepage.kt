@@ -37,6 +37,7 @@ private const val VERTICAL_SPACE_MEDIUM = 8
 private const val VERTICAL_SPACE_LARGE = 16
 private const val TOGGLE_COOLDOWN = 500L
 
+/** The main and first page of the application **/
 @Composable
 fun HomepageView(historyTabCallback: () -> Unit) {
     val context = LocalContext.current
@@ -56,7 +57,7 @@ fun HomepageView(historyTabCallback: () -> Unit) {
     }
 }
 
-/** Center of the homepage with the main display components **/
+/** Center of the homepage with the main display components including the step count and reset button **/
 @Composable
 fun StepCountDisplay(modifier: Modifier) {
     val currentlyCalibrating by StepCounterServiceManager.currentlyCalibratingFlow.collectAsState()

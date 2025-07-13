@@ -1,6 +1,7 @@
 package com.example.steptrackerwithlocaldatabase
 
 import android.content.Context
+import android.util.Log
 import androidx.annotation.MainThread
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -16,7 +17,9 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
+/** Object to manage the user's step history **/
 object HistoryManager {
+    private const val TAG = "HistoryManager"
     private const val KEY = "history"
     private const val EMPTY_ARRAY_STRING = "[]"
     private const val DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss'Z'"
@@ -28,6 +31,7 @@ object HistoryManager {
     val historyListFlow = MutableStateFlow(JSONArray())
     private val jsonConfig = Json { ignoreUnknownKeys }
 
+    /** Save the current timestamp and step count to disk **/
     fun appendToHistory(context: Context) {
         val prefs = getPrefs(context)
         val jsonArray = JSONArray(
@@ -44,13 +48,16 @@ object HistoryManager {
         jsonArray.put(obj)
         val jsonString = jsonArray.toString()
         prefs.edit().putString(KEY, jsonString).apply()
+        Log.d(TAG, "Saved history $obj")
         CoroutineScope(Dispatchers.Main).launch {
             historyListFlow.value = getHistoryListFromDisk(context)
         }
     }
 
+    /** Clear the history from disk **/
     @MainThread
     fun clearHistory(context: Context) {
+        Log.d(TAG, "Cleared history")
         getPrefs(context).edit().putString(KEY, EMPTY_ARRAY_STRING).apply()
         historyListFlow.value = JSONArray()
     }
@@ -61,6 +68,7 @@ object HistoryManager {
         )
     }
 
+    /** Get the history entry at the given index, ordered from latest to earliest **/
     fun getHistoryItem(index: Int): HistoryItem {
         val list = historyListFlow.value
         return jsonConfig.decodeFromString(
