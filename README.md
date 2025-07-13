@@ -3,7 +3,7 @@
 ## Setup instructions
 To install the app, please download the APK from the releases section or navigate to it in the repo
 via .../app/release/app-release.apk. Once the apk is downloaded onto your Android device, simply
-allow installation permission and it begin the installation.
+allow installation permission and begin the installation.
 
 Once the application is opened, there are five main available actions.
 1. Toggle step counter: By clicking the switch in the bottom right labelled "Count steps" you can
@@ -19,6 +19,7 @@ Once the application is opened, there are five main available actions.
 
 ## Device Requirements
 Minimum version: API Level 24/Android 7.0, Nougat (2016)
+
 Target version: API Level 34/Android 14, Upside Down Cake (2023)
 
 - Please note that the application has not been test on versions below Android 12 and that therefore
@@ -47,7 +48,7 @@ querying in this application, having a full SQLite ORM database seemed superfluo
 being a better alternative also required more setup than SharedPreferences. SharedPreferences' design
 which includes asynchronous disk updates while having instant updates to the copy of the data in
 memory, allowed us to have a simpler design than we would have with DataStore, since we didn't need
-to manage out own local variable for UI relevant data and didn't have to worry about accidentally
+to manage our own local variable for UI relevant data and didn't have to worry about accidentally
 triggering disk updates from the main thread.
 
 ### Use of singletons
