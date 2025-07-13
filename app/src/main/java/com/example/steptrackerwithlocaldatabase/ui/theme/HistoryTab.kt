@@ -59,7 +59,10 @@ fun HistoryTab() {
         ) {
 
             Column(Modifier.fillMaxWidth()) {
-                Row(Modifier.fillMaxWidth().padding(horizontal = 9.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 9.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
                         "My History",
                         Modifier.weight(1f),
@@ -98,7 +101,10 @@ fun HistoryTab() {
                         color = MaterialTheme.colorScheme.inversePrimary
                     )
                     LazyColumn {
-                        items(historyList.length()) {
+                        items(
+                            historyList.length(),
+                            { index ->  HistoryManager.getHistoryItem(index).timestamp }
+                        ) {
                             val item = HistoryManager.getHistoryItem(it)
                             Row(Modifier.height(IntrinsicSize.Min)) {
                                 Text(item.stepCount.toString(),

@@ -19,6 +19,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
@@ -31,6 +32,7 @@ class StepCounterService : Service(), SensorEventListener {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        StepCounterServiceManager.serviceStarted = true
         val notificationIntent = Intent(this, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
             this,
@@ -77,11 +79,14 @@ class StepCounterService : Service(), SensorEventListener {
         (getSystemService(Context.SENSOR_SERVICE) as SensorManager).unregisterListener(this)
         sensorListenerRegistered = false
         stepOffset = -1L
+        StepCounterServiceManager.serviceStarted = false
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
         if (event?.sensor?.type == Sensor.TYPE_STEP_COUNTER) {
+            StepCounterServiceManager.onSensorCallbackReceived()
             val steps = event.values[0].toLong()
+            Log.d("StepCounterService", "Sensor event received, steps: $steps")
             if (stepOffset != -1L) {
                 StepDataManager.incrementActualSteps(
                     this,
@@ -95,18 +100,30 @@ class StepCounterService : Service(), SensorEventListener {
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
 }
 
-object StepCounterServiceController {
+object StepCounterServiceManager {
+    val currentlyCalibratingFlow = MutableStateFlow(false)
+    var serviceStarted = false
+
     fun startStepCounter(context: Context) {
+        if (serviceStarted) {
+            return
+        }
         val intent = Intent(context, StepCounterService::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             context.startForegroundService(intent)
         } else {
             context.startService(intent)
         }
+        currentlyCalibratingFlow.value = true
     }
 
     fun stopStepCounter(context: Context) {
         val intent = Intent(context, StepCounterService::class.java)
         context.stopService(intent)
+        currentlyCalibratingFlow.value = false
+    }
+
+    fun onSensorCallbackReceived() {
+        currentlyCalibratingFlow.value = false
     }
 }
