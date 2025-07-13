@@ -1,5 +1,6 @@
 package com.example.steptrackerwithlocaldatabase
 
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -13,6 +14,7 @@ import android.hardware.SensorManager
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
+import androidx.annotation.MainThread
 import androidx.core.app.NotificationCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -27,48 +29,69 @@ class StepCounterService : Service(), SensorEventListener {
     private val serviceScope = CoroutineScope(Dispatchers.IO)
     private var job: Job? = null
     private var sensorListenerRegistered = false
-    private var stepOffset = -1L
+    private var stepOffset = STEP_OFFSET_MISSING
+
+    companion object {
+        private const val TAG = "StepCounterService"
+
+        private const val CHANNEL_ID = "step_counter_service_channel"
+        private const val CHANNEL_NAME = "Step Counter Service"
+        private const val PENDING_INTENT_REQUEST_CODE = 0
+        private const val NOTIFICATION_ID = 1
+        private const val HISTORY_REPORT_INTERVAL_MILLIS = 15000L
+        private const val STEP_OFFSET_MISSING = -1L
+    }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         StepCounterServiceManager.serviceStarted = true
+        startForeground(NOTIFICATION_ID, createNotification())
+        tryStartHistoryWritingJob()
+        tryRegisterStepSensorListener()
+        return START_STICKY
+    }
+
+    private fun createNotification(): Notification {
         val notificationIntent = Intent(this, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
             this,
-            0,
+            PENDING_INTENT_REQUEST_CODE,
             notificationIntent,
-            PendingIntent.FLAG_IMMUTABLE  // <- Important for API 31+
+            PendingIntent.FLAG_IMMUTABLE
         )
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
-                "step_counter_service_channel",
-                "Step Counter Service",
+                CHANNEL_ID,
+                CHANNEL_NAME,
                 NotificationManager.IMPORTANCE_LOW
             )
             val manager = getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(channel)
         }
-        val notification = NotificationCompat
-            .Builder(this, "step_counter_service_channel")
+        return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentIntent(pendingIntent).setSmallIcon(R.mipmap.ic_launcher).build()
-        startForeground(1, notification)
+    }
+
+    private fun tryStartHistoryWritingJob() {
         if (job?.isActive != true) {
             job = serviceScope.launch {
                 while (isActive) {
                     HistoryManager.appendToHistory(this@StepCounterService)
-                    Log.d("StepCounterService", "Saved step data")
-                    delay(15000)
+                    Log.d(TAG, "Saved step data")
+                    delay(HISTORY_REPORT_INTERVAL_MILLIS)
                 }
             }
         }
+    }
+
+    private fun tryRegisterStepSensorListener() {
         if (!sensorListenerRegistered) {
             val sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
             sensorListenerRegistered = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)?.let {
                 sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
             } == true
         }
-        return START_STICKY
     }
 
     override fun onDestroy() {
@@ -78,16 +101,18 @@ class StepCounterService : Service(), SensorEventListener {
         job = null
         (getSystemService(Context.SENSOR_SERVICE) as SensorManager).unregisterListener(this)
         sensorListenerRegistered = false
-        stepOffset = -1L
+        stepOffset = STEP_OFFSET_MISSING
         StepCounterServiceManager.serviceStarted = false
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
         if (event?.sensor?.type == Sensor.TYPE_STEP_COUNTER) {
-            StepCounterServiceManager.onSensorCallbackReceived()
+            CoroutineScope(Dispatchers.Main).launch {
+                StepCounterServiceManager.onSensorCallbackReceived()
+            }
             val steps = event.values[0].toLong()
-            Log.d("StepCounterService", "Sensor event received, steps: $steps")
-            if (stepOffset != -1L) {
+            Log.d(TAG, "Sensor event received, steps: $steps")
+            if (stepOffset != STEP_OFFSET_MISSING) {
                 StepDataManager.incrementActualSteps(
                     this,
                     (steps - stepOffset).toInt()
@@ -104,6 +129,7 @@ object StepCounterServiceManager {
     val currentlyCalibratingFlow = MutableStateFlow(false)
     var serviceStarted = false
 
+    @MainThread
     fun startStepCounter(context: Context) {
         if (serviceStarted) {
             return
@@ -117,12 +143,14 @@ object StepCounterServiceManager {
         currentlyCalibratingFlow.value = true
     }
 
+    @MainThread
     fun stopStepCounter(context: Context) {
         val intent = Intent(context, StepCounterService::class.java)
         context.stopService(intent)
         currentlyCalibratingFlow.value = false
     }
 
+    @MainThread
     fun onSensorCallbackReceived() {
         currentlyCalibratingFlow.value = false
     }

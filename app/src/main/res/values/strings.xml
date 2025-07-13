@@ -1,3 +1,15 @@
 <resources>
     <string name="app_name">Step Tracker with Local Database</string>
+    <string name="history_tab_title">My History</string>
+    <string name="history_reset_button">Clear history</string>
+    <string name="step_column_title">Steps</string>
+    <string name="timestamp_title">Time (UTC +0)</string>
+    <string name="step_display_label">Total Steps</string>
+    <string name="step_count_reset_button">Reset</string>
+    <string name="mock_step_button">Mock step</string>
+    <string name="step_counter_toggle">Count steps</string>
+    <string name="permission_unavailable_toast">
+        Permission unavailable, try again after granting permission</string>
+    <string name="history_tab_button">Show history</string>
+    <string name="step_counter_calibrating_message">Calibrating step counter…</string>
 </resources>

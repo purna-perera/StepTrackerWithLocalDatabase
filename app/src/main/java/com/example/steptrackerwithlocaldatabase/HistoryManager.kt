@@ -1,7 +1,7 @@
 package com.example.steptrackerwithlocaldatabase
 
 import android.content.Context
-import android.util.Log
+import androidx.annotation.MainThread
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -9,9 +9,6 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.decodeFromJsonElement
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.SimpleDateFormat
@@ -20,37 +17,48 @@ import java.util.Locale
 import java.util.TimeZone
 
 object HistoryManager {
+    private const val KEY = "history"
+    private const val EMPTY_ARRAY_STRING = "[]"
+    private const val DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss'Z'"
+    private const val TIME_ZONE = "UTC"
+    private const val STEP_COUNT_FIELD = "step_count"
+    private const val TIMESTAMP_FIELD = "timestamp"
+    private const val EMPTY_DATE = "_"
+
     val historyListFlow = MutableStateFlow(JSONArray())
     private val jsonConfig = Json { ignoreUnknownKeys }
 
     fun appendToHistory(context: Context) {
         val prefs = getPrefs(context)
-        val jsonArray = JSONArray(prefs.getString("history", "[]") ?: "[]")
-        val dateString = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).run {
-            timeZone = TimeZone.getTimeZone("UTC")
+        val jsonArray = JSONArray(
+            prefs.getString(KEY, EMPTY_ARRAY_STRING) ?: EMPTY_ARRAY_STRING
+        )
+        val dateString = SimpleDateFormat(DATE_FORMAT, Locale.US).run {
+            timeZone = TimeZone.getTimeZone(TIME_ZONE)
             format(Date())
         }
         val obj = JSONObject().apply {
-            put("step_count", StepDataManager.getStepsFromDisk(context))
-            put("timestamp", dateString ?: "_")
+            put(STEP_COUNT_FIELD, StepDataManager.getStepsFromDisk(context))
+            put(TIMESTAMP_FIELD, dateString ?: EMPTY_DATE)
         }
         jsonArray.put(obj)
         val jsonString = jsonArray.toString()
-        prefs.edit()
-            .putString("history", jsonString)
-            .apply()
+        prefs.edit().putString(KEY, jsonString).apply()
         CoroutineScope(Dispatchers.Main).launch {
             historyListFlow.value = getHistoryListFromDisk(context)
         }
     }
 
+    @MainThread
     fun clearHistory(context: Context) {
-        getPrefs(context).edit().putString("history", "[]").apply()
+        getPrefs(context).edit().putString(KEY, EMPTY_ARRAY_STRING).apply()
         historyListFlow.value = JSONArray()
     }
 
     private fun getHistoryListFromDisk(context: Context): JSONArray {
-        return JSONArray(getPrefs(context).getString("history", "[]") ?: "[]")
+        return JSONArray(
+            getPrefs(context).getString(KEY, EMPTY_ARRAY_STRING) ?: EMPTY_ARRAY_STRING
+        )
     }
 
     fun getHistoryItem(index: Int): HistoryItem {
@@ -61,14 +69,15 @@ object HistoryManager {
 
     }
 
+    @MainThread
     fun init(context: Context) {
         historyListFlow.value = getHistoryListFromDisk(context)
     }
 
     @Serializable
     data class HistoryItem(
-        @SerialName("step_count") val stepCount: Int,
-        @SerialName("timestamp") val timestamp: String
+        @SerialName(STEP_COUNT_FIELD) val stepCount: Int,
+        @SerialName(TIMESTAMP_FIELD) val timestamp: String
     )
 }
 

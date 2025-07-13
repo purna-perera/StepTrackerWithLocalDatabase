@@ -5,11 +5,13 @@ import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
+import androidx.annotation.MainThread
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 
 object PermissionManager {
     private const val REQUEST_CODE = 1001
+
     fun permissionAvailable(context: Context): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             ContextCompat.checkSelfPermission(context, Manifest.permission.ACTIVITY_RECOGNITION) ==
@@ -19,6 +21,7 @@ object PermissionManager {
         }
     }
 
+    @MainThread
     fun requestUserPermission(activity: Activity?) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             activity?.let {
